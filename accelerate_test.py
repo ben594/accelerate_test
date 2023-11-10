@@ -22,7 +22,7 @@ def get_dataloaders(accelerator, batch_size = 16):
         tokenized_datasets = datasets.map(
             tokenize,
             batched = True,
-            remove_colums = ["idx", "sentence1", "sentence2"]
+            remove_columns = ["idx", "sentence1", "sentence2"]
         )
         
     tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
