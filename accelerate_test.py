@@ -7,10 +7,10 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_
 import evaluate
 import argparse
 
-EVAL_BATCH_SIZE = 16
-MAX_GPU_BATCH_SIZE = 12
+EVAL_BATCH_SIZE = 4
+MAX_GPU_BATCH_SIZE = 4
 
-def get_dataloaders(accelerator, batch_size = 16):
+def get_dataloaders(accelerator, batch_size = 4):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
     datasets = load_dataset("glue", "mrpc")
     
@@ -29,9 +29,9 @@ def get_dataloaders(accelerator, batch_size = 16):
     
     def collate_fn(examples):
         if accelerator.mixed_precision == "fp8":
-            pad_to_multiple_of = 16
+            pad_to_multiple_of = 4
         elif accelerator.mixed_precision != "no":
-            pad_to_multiple_of = 8
+            pad_to_multiple_of = 4
         else:
             pad_to_multiple_of = None
 
@@ -138,7 +138,7 @@ def main():
     )
     parser.add_argument("--cpu", action="store_true", help="If passed, will train on the CPU.")
     args = parser.parse_args()
-    config = {"lr": 2e-5, "num_epochs": 3, "seed": 42, "batch_size": 16}
+    config = {"lr": 2e-5, "num_epochs": 3, "seed": 42, "batch_size": 4}
     training_function(config, args)
 
 
