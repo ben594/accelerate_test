@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup, set_seed
 import evaluate
 import argparse
+import tqdm
 
 EVAL_BATCH_SIZE = 4
 MAX_GPU_BATCH_SIZE = 4
@@ -96,7 +97,7 @@ def training_function(config, args):
     # train model
     for epoch in range(num_epochs):
         model.train()
-        for step, batch in enumerate(train_dataloader):
+        for step, batch in tqdm(enumerate(train_dataloader)):
             # We could avoid this line since we set the accelerator with `device_placement=True`.
             batch.to(accelerator.device)
             outputs = model(**batch)
