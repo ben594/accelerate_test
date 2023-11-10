@@ -8,10 +8,10 @@ import evaluate
 import argparse
 import tqdm
 
-EVAL_BATCH_SIZE = 1
-MAX_GPU_BATCH_SIZE = 1
+EVAL_BATCH_SIZE = 16
+MAX_GPU_BATCH_SIZE = 16
 
-def get_dataloaders(accelerator, batch_size = 1):
+def get_dataloaders(accelerator, batch_size = 16):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
     datasets = load_dataset("glue", "wnli")
     
@@ -30,9 +30,9 @@ def get_dataloaders(accelerator, batch_size = 1):
     
     def collate_fn(examples):
         if accelerator.mixed_precision == "fp8":
-            pad_to_multiple_of = 1
+            pad_to_multiple_of = 16
         elif accelerator.mixed_precision != "no":
-            pad_to_multiple_of = 1
+            pad_to_multiple_of = 16
         else:
             pad_to_multiple_of = None
 
@@ -143,7 +143,7 @@ def main():
     )
     parser.add_argument("--cpu", action="store_true", help="If passed, will train on the CPU.")
     args = parser.parse_args()
-    config = {"lr": 2e-5, "num_epochs": 3, "seed": 42, "batch_size": 1}
+    config = {"lr": 2e-5, "num_epochs": 3, "seed": 42, "batch_size": 16}
     training_function(config, args)
 
 
