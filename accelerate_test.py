@@ -5,10 +5,10 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup, set_seed
 import evaluate
+import argparse
 
-accelerator = Accelerator()
 EVAL_BATCH_SIZE = 16
-MAX_GPU_BATCH_SIZE = 16
+MAX_GPU_BATCH_SIZE = 12
 
 def get_dataloaders(accelerator, batch_size = 16):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
@@ -92,3 +92,55 @@ def training_function(config, args):
     model, optimizer, train_dataloader, eval_dataloader, lr_scheduler = accelerator.prepare(
         model, optimizer, train_dataloader, eval_dataloader, lr_scheduler
     )
+    
+    # train model
+    for epoch in range(num_epochs):
+        model.train()
+        for step, batch in enumerate(train_dataloader):
+            # We could avoid this line since we set the accelerator with `device_placement=True`.
+            batch.to(accelerator.device)
+            outputs = model(**batch)
+            loss = outputs.loss
+            loss = loss / gradient_accumulation_steps
+            accelerator.backward(loss)
+            if step % gradient_accumulation_steps == 0:
+                optimizer.step()
+                lr_scheduler.step()
+                optimizer.zero_grad()
+
+        model.eval()
+        for step, batch in enumerate(eval_dataloader):
+            # We could avoid this line since we set the accelerator with `device_placement=True`.
+            batch.to(accelerator.device)
+            with torch.no_grad():
+                outputs = model(**batch)
+            predictions = outputs.logits.argmax(dim=-1)
+            predictions, references = accelerator.gather_for_metrics((predictions, batch["labels"]))
+            metric.add_batch(
+                predictions=predictions,
+                references=references,
+            )
+
+        eval_metric = metric.compute()
+        # Use accelerator.print to print only on the main process.
+        accelerator.print(f"epoch {epoch}:", eval_metric)
+        
+def main():
+    parser = argparse.ArgumentParser(description="Simple example of training script.")
+    parser.add_argument(
+        "--mixed_precision",
+        type=str,
+        default=None,
+        choices=["no", "fp16", "bf16", "fp8"],
+        help="Whether to use mixed precision. Choose"
+        "between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >= 1.10."
+        "and an Nvidia Ampere GPU.",
+    )
+    parser.add_argument("--cpu", action="store_true", help="If passed, will train on the CPU.")
+    args = parser.parse_args()
+    config = {"lr": 2e-5, "num_epochs": 3, "seed": 42, "batch_size": 16}
+    training_function(config, args)
+
+
+if __name__ == "__main__":
+    main()
