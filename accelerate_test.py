@@ -12,7 +12,7 @@ MAX_GPU_BATCH_SIZE = 4
 
 def get_dataloaders(accelerator, batch_size = 4):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-    datasets = load_dataset("glue", "mrpc")
+    datasets = load_dataset("glue", "wnli")
     
     def tokenize(examples):
         outputs = tokenizer(examples["sentence1"], examples["sentence2"], truncation = True, max_length = None)
