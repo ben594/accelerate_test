@@ -73,7 +73,7 @@ def training_function(config, args):
     
     gradient_accumulation_steps = 1
     if batch_size > MAX_GPU_BATCH_SIZE and accelerator.distributed_type != DistributedType.TPU:
-        gradient_accumulation_stteps = batch_size // MAX_GPU_BATCH_SIZE
+        gradient_accumulation_steps = batch_size // MAX_GPU_BATCH_SIZE
         batch_size = MAX_GPU_BATCH_SIZE
         
     set_seed(seed)
@@ -101,8 +101,11 @@ def training_function(config, args):
             print("step: ", step)
             # We could avoid this line since we set the accelerator with `device_placement=True`.
             batch.to(accelerator.device)
+            print("device: ", accelerator.device)
             outputs = model(**batch)
+            print("outputs: ", outputs)
             loss = outputs.loss
+            print("loss: ", loss)
             loss = loss / gradient_accumulation_steps
             accelerator.backward(loss)
             if step % gradient_accumulation_steps == 0:
