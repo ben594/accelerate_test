@@ -15,7 +15,7 @@ def get_dataloaders(accelerator, batch_size = 16):
     datasets = load_dataset("glue", "mrpc")
     
     def tokenize(examples):
-        outputs = tokenizer(examples["sentence1"], examples["sentence2"], examples["sentence3"])
+        outputs = tokenizer(examples["sentence1"], examples["sentence2"], truncation = True, max_length = None)
         return outputs
     
     with accelerator.main_process_first():
